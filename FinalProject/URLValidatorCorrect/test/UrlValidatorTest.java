@@ -18,6 +18,9 @@
 
 import junit.framework.TestCase;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Pattern;
 
 
 /**
@@ -27,398 +30,238 @@ import junit.framework.TestCase;
  */
 public class UrlValidatorTest extends TestCase {
 
-   private boolean printStatus = false;
-   private boolean printIndex = false;//print index that indicates current scheme,host,port,path, query test were using.
+    private boolean printStatus = false;
+    private boolean printIndex = false;//print index that indicates current scheme,host,port,path, query test were using.
 
-   public UrlValidatorTest(String testName) {
-      super(testName);
-   }
-
-   protected void setUp() {
-      for (int index = 0; index < testPartsIndex.length - 1; index++) {
-         testPartsIndex[index] = 0;
-      }
-   }
-
-   public void testIsValid() {
-        testIsValid(testUrlParts, UrlValidator.ALLOW_ALL_SCHEMES);
-        setUp();
-        //long options =
-        //    UrlValidator.ALLOW_2_SLASHES
-        //        + UrlValidator.ALLOW_ALL_SCHEMES
-        //        + UrlValidator.NO_FRAGMENTS;
-
-        //testIsValid(testUrlPartsOptions, options);
-   }
-
-   public void testIsValidScheme() {
-      if (printStatus) {
-         System.out.print("\n testIsValidScheme() ");
-      }
-      String[] schemes = {"http", "gopher"};
-      //UrlValidator urlVal = new UrlValidator(schemes,false,false,false);
-      UrlValidator urlVal = new UrlValidator(schemes, 0);
-      for (int sIndex = 0; sIndex < testScheme.length; sIndex++) {
-         ResultPair testPair = testScheme[sIndex];
-         boolean result = urlVal.isValidScheme(testPair.item);
-         assertEquals(testPair.item, testPair.valid, result);
-         if (printStatus) {
-            if (result == testPair.valid) {
-               System.out.print('.');
-            } else {
-               System.out.print('X');
-            }
-         }
-      }
-      if (printStatus) {
-         System.out.println();
-      }
-
-   }
-
-   /**
-    * Create set of tests by taking the testUrlXXX arrays and
-    * running through all possible permutations of their combinations.
-    *
-    * @param testObjects Used to create a url.
-    */
-   public void testIsValid(Object[] testObjects, long options) {
-      UrlValidator urlVal = new UrlValidator(null, null, options);
-      assertTrue(urlVal.isValid("http://www.google.com"));
-      assertTrue(urlVal.isValid("http://www.google.com/"));
-      int statusPerLine = 60;
-      int printed = 0;
-      if (printIndex)  {
-         statusPerLine = 6;
-      }
-      do {
-         StringBuffer testBuffer = new StringBuffer();
-         boolean expected = true;
-         for (int testPartsIndexIndex = 0; testPartsIndexIndex < testPartsIndex.length; ++testPartsIndexIndex) {
-            int index = testPartsIndex[testPartsIndexIndex];
-            ResultPair[] part = (ResultPair[]) testObjects[testPartsIndexIndex];
-            testBuffer.append(part[index].item);
-            expected &= part[index].valid;
-         }
-         //System.out.println(testPartsIndex[0]);
-         String url = testBuffer.toString();
-         boolean result = urlVal.isValid(url);
-         
-         if(result == true)
-        	 System.out.println(url);
-         assertEquals(url, expected, result);
-         
-         if (printStatus) {
-            if (printIndex) {
-               //System.out.print(testPartsIndextoString());
-            } else {
-               if (result == expected) {
-                  System.out.print('.');
-               } else {
-                  System.out.print('X');
-               }
-            }
-            printed++;
-            if (printed == statusPerLine) {
-               System.out.println();
-               printed = 0;
-            }
-         }
-      } while (incrementTestPartsIndex(testPartsIndex, testObjects));
-      if (printStatus) {
-         System.out.println();
-      }
-   }
-
-   public void testValidator202() {
-       String[] schemes = {"http","https"};
-       UrlValidator urlValidator = new UrlValidator(schemes, UrlValidator.NO_FRAGMENTS);
-       //UrlValidator urlValidator = new UrlValidator(schemes, UrlValidator.ALLOW_ALL_SCHEMES);
-       assertTrue(urlValidator.isValid("http://www.logoworks.comwww.logoworks.comwww.logoworks.comwww.logoworks.comwww.logoworks.comwww.logoworks.comwww.logoworks.comwww.logoworks.comwww.logoworks.comwww.logoworks.comwww.logoworks.comwww.logoworks.comwww.logoworks.comwww.logoworks.comwww.logoworks.comwww.logoworks.comwww.logoworks.comwww.logoworks.comwww.logoworks.comwww.logoworks.comwww.logoworks.comwww.logoworks.comwww.logoworks.comwww.logoworks.comwww.logoworks.comwww.logoworks.comwww.logoworks.comwww.logoworks.comwww.logoworks.comwww.org"));
-   }
-
-   public void testValidator204() {
-       String[] schemes = {"http","https"};
-       UrlValidator urlValidator = new UrlValidator(schemes);
-       assertTrue(urlValidator.isValid("http://tech.yahoo.com/rc/desktops/102;_ylt=Ao8yevQHlZ4On0O3ZJGXLEQFLZA5"));
-   }
-
-   public void testValidator218() {
-       UrlValidator validator = new UrlValidator(UrlValidator.ALLOW_2_SLASHES);
-       assertTrue("parentheses should be valid in URLs",
-               validator.isValid("http://somewhere.com/pathxyz/file(1).html"));
-   }
-
-    public void testValidator248() {
-        RegexValidator regex = new RegexValidator(new String[] {"localhost", ".*\\.my-testing"});
-        UrlValidator validator = new UrlValidator(regex, 0);
-
-        assertTrue("localhost URL should validate",
-                validator.isValid("http://localhost/test/index.html"));
-        assertTrue("first.my-testing should validate",
-                validator.isValid("http://first.my-testing/test/index.html"));
-        assertTrue("sup3r.my-testing should validate",
-                validator.isValid("http://sup3r.my-testing/test/index.html"));
-
-        assertFalse("broke.my-test should not validate",
-                validator.isValid("http://broke.my-test/test/index.html"));
-
-        assertTrue("www.apache.org should still validate",
-                validator.isValid("http://www.apache.org/test/index.html"));
-
-        // Now check using options
-        validator = new UrlValidator(UrlValidator.ALLOW_LOCAL_URLS);
-        
-        assertTrue("localhost URL should validate",
-              validator.isValid("http://localhost/test/index.html"));
-        
-        assertTrue("machinename URL should validate",
-              validator.isValid("http://machinename/test/index.html"));
-        
-        assertTrue("www.apache.org should still validate",
-              validator.isValid("http://www.apache.org/test/index.html"));
+    public UrlValidatorTest(String testName) {
+        super(testName);
     }
 
-    public void testValidator288() {
-        UrlValidator validator = new UrlValidator(UrlValidator.ALLOW_LOCAL_URLS);
-
-        assertTrue("hostname should validate",
-                validator.isValid("http://hostname"));
-
-        assertTrue("hostname with path should validate",
-                validator.isValid("http://hostname/test/index.html"));
-        
-        assertTrue("localhost URL should validate",
-                validator.isValid("http://localhost/test/index.html"));
-        
-        assertFalse("first.my-testing should not validate",
-                validator.isValid("http://first.my-testing/test/index.html"));
 
 
-        assertTrue("www.apache.org should still validate",
-                validator.isValid("http://www.apache.org/test/index.html"));
+    public void testManualTest()
+    {
+        UrlValidator urlVal = new UrlValidator(null, null, UrlValidator.ALLOW_ALL_SCHEMES);
+        System.out.println("Result for http://www.google.com: " + urlVal.isValid("http://www.google.com"));
+        System.out.println("Result for https://www.google.com: " + urlVal.isValid("https://www.google.com"));
+        System.out.println("Result for ftp://www.google.com " + urlVal.isValid("ftp://www.google.com"));
+        System.out.println("Result for http://1.2.3.4: " + urlVal.isValid("http://1.2.3.4"));
+        System.out.println("Result for http://0.0.0.0: " + urlVal.isValid("http://0.0.0.0"));
+        System.out.println("Result for http://255.255.255.255: " + urlVal.isValid("http://255.255.255.255"));
+        System.out.println("Result for http://255.255.255.256: " + urlVal.isValid("http://255.255.255.256"));
+        System.out.println("Result for http://255.255.255.255:80/foo/bar: " + urlVal.isValid("http://255.255.255.255:80/foo/bar"));
+        System.out.println("Result for https://255.255.255.255:80f/foo/bar: " + urlVal.isValid("https://255.255.255.255:80f/foo/bar"));
+        System.out.println("Result for http://www.google.com?person=me: " + urlVal.isValid("http://www.google.com?person=me"));
+        System.out.println("Result for http://www.google.com:80/foo/bar?action=view: " + urlVal.isValid("http://www.google.com:80/foo/bar?action=view"));
+        System.out.println("Result for http://www.amazon.uk: " + urlVal.isValid("http://www.amazon.uk"));
+        System.out.println("Result for htttp://www.amazon.com: " + urlVal.isValid("htttp://www.amazon.com"));
+        System.out.println("Result for http://wwww.amazon.com: " + urlVal.isValid("http://wwww.amazon.com"));
+        System.out.println("Result for http://www.amazon!.com: " + urlVal.isValid("http://www.amazon!.com"));
+        System.out.println("Result for http://www!.amazon.com: " + urlVal.isValid("http://www!.amazon.com"));
+        System.out.println("Result for http://www.amazon.com!: " + urlVal.isValid("http://www.amazon.com!"));
+        System.out.println("Result for http://www.amazon.edu: " + urlVal.isValid("http://www.amazon.edu"));
+        System.out.println("Result for http://www.amazon.uk: " + urlVal.isValid("http://www.amazon.uk"));
 
-        // Turn it off, and check
-        validator = new UrlValidator(0);
 
-        assertFalse("hostname should no longer validate",
-                validator.isValid("http://hostname"));
-
-        assertFalse("localhost URL should no longer validate",
-                validator.isValid("http://localhost/test/index.html"));
-        
-        assertTrue("www.apache.org should still validate",
-                validator.isValid("http://www.apache.org/test/index.html"));
     }
-    
-    public void testValidator276() {
-        // file:// isn't allowed by default
-        UrlValidator validator = new UrlValidator();
-        
-        assertTrue("http://apache.org/ should be allowed by default",
-                 validator.isValid("http://www.apache.org/test/index.html"));
-       
-        assertFalse("file:///c:/ shouldn't be allowed by default",
-                 validator.isValid("file:///C:/some.file"));
-        
-        assertFalse("file:///c:\\ shouldn't be allowed by default",
-              validator.isValid("file:///C:\\some.file"));
-        
-        assertFalse("file:///etc/ shouldn't be allowed by default",
-              validator.isValid("file:///etc/hosts"));
-        
-        assertFalse("file://localhost/etc/ shouldn't be allowed by default",
-              validator.isValid("file://localhost/etc/hosts"));
-        
-        assertFalse("file://localhost/c:/ shouldn't be allowed by default",
-              validator.isValid("file://localhost/c:/some.file"));
-        
-        // Turn it on, and check
-        // Note - we need to enable local urls when working with file:
-        validator = new UrlValidator(new String[] {"http","file"}, UrlValidator.ALLOW_LOCAL_URLS);
-        
-        assertTrue("http://apache.org/ should be allowed by default",
-                 validator.isValid("http://www.apache.org/test/index.html"));
-       
-        assertTrue("file:///c:/ should now be allowed",
-                 validator.isValid("file:///C:/some.file"));
-        
-        // Currently, we don't support the c:\ form
-        assertFalse("file:///c:\\ shouldn't be allowed",
-              validator.isValid("file:///C:\\some.file"));
-        
-        assertTrue("file:///etc/ should now be allowed",
-              validator.isValid("file:///etc/hosts"));
-        
-        assertTrue("file://localhost/etc/ should now be allowed",
-              validator.isValid("file://localhost/etc/hosts"));
-        
-        assertTrue("file://localhost/c:/ should now be allowed",
-              validator.isValid("file://localhost/c:/some.file"));
-        
-        // These are never valid
-        assertFalse("file://c:/ shouldn't ever be allowed, needs file:///c:/",
-              validator.isValid("file://C:/some.file"));
-     
-        assertFalse("file://c:\\ shouldn't ever be allowed, needs file:///c:/",
-              validator.isValid("file://C:\\some.file"));
+
+
+    public void testYourFirstPartition()
+    {
+        UrlValidator urlVal = new UrlValidator(null, null, UrlValidator.ALLOW_ALL_SCHEMES);
+        // Test IP address where each subsection is a negative value
+        // isValid() should return false
+        String urlToTest = "http://-1.-1.-1.-1";
+        System.out.println("Result for " + urlToTest + ": " + urlVal.isValid(urlToTest));
     }
+
+    public void testYourSecondPartition(){
+        UrlValidator urlVal = new UrlValidator(null, null, UrlValidator.ALLOW_ALL_SCHEMES);
+        // Test IP address where each subsection is 0, the lower boundary case
+        // isValid() should return true
+        String urlToTest = "http://0.0.0.0";
+        System.out.println("Result for " + urlToTest + ": " + urlVal.isValid(urlToTest));
+    }
+
+    public void testYourThirdPartition(){
+        UrlValidator urlVal = new UrlValidator(null, null, UrlValidator.ALLOW_ALL_SCHEMES);
+        // Test IP address where each subsection is greater than 0 and less than 255
+        // isValid() should return true
+        String urlToTest = "http://10.10.10.10";
+        System.out.println("Result for " + urlToTest + ": " + urlVal.isValid(urlToTest));
+    }
+
+    public void testYourFourthPartition(){
+        UrlValidator urlVal = new UrlValidator(null, null, UrlValidator.ALLOW_ALL_SCHEMES);
+        // Test IP address where each subsection is 255, the upper boundary case
+        // isValid() should return true
+        String urlToTest = "http://255.255.255.255";
+        System.out.println("Result for " + urlToTest + ": " + urlVal.isValid(urlToTest));
+    }
+
+    public void testYourFifthPartition(){
+        UrlValidator urlVal = new UrlValidator(null, null, UrlValidator.ALLOW_ALL_SCHEMES);
+        // Test IP address where each subsection is greater than 255
+        // isValid() should return false
+        String urlToTest = "http://300.300.300.300";
+        System.out.println("Result for " + urlToTest + ": " + urlVal.isValid(urlToTest));
+    }
+
+    public void testIsValid()
+    {
+        UrlValidator urlValidator = new UrlValidator(null, null, UrlValidator.ALLOW_ALL_SCHEMES);
+
+        List<ResultPair> scheme = new ArrayList<>();
+        List<ResultPair> authority = new ArrayList<>();
+        List<ResultPair> port = new ArrayList<>();
+        List<ResultPair> urlPath = new ArrayList<>();
+        List<ResultPair> urlQuery = new ArrayList<>();
+        List<ResultPair> urlFragment = new ArrayList<>();
+
+        scheme.add(new ResultPair("http://", true));
+        scheme.add(new ResultPair("https://", true));
+        scheme.add(new ResultPair("ftp://", true));
+        scheme.add(new ResultPair("ftp:/", false));
+        scheme.add(new ResultPair("https:", false));
+        scheme.add(new ResultPair("http", false));
+        scheme.add(new ResultPair("gopher://", true));
+        scheme.add(new ResultPair("1!$^2://", false));
+        scheme.add(new ResultPair("H<llo>://", false));
+        //scheme.add(new ResultPair("file:///", true));
+
+        authority.add(new ResultPair("www.google.com", true));
+        authority.add(new ResultPair("amazon.uk", true));
+        authority.add(new ResultPair("usa.gov", true));
+        authority.add(new ResultPair("256.123.0.0", false));
+        authority.add(new ResultPair("-1.-1.-1.-1", false));
+        authority.add(new ResultPair("правительство.рф", true));
+        authority.add(new ResultPair("155.147.177.188", true));
+        authority.add(new ResultPair(".mil", false));
+        authority.add(new ResultPair("1", false));
+        authority.add(new ResultPair("nic.xyz", true));
+
+
+        port.add(new ResultPair(":23", true));
+        port.add(new ResultPair(":12345z", false));
+        port.add(new ResultPair(":-12345", false));
+        port.add(new ResultPair(":12$45", false));
+        port.add(new ResultPair(":88888", true));
+        port.add(new ResultPair(":", false));
+
+        //NOTE according rfc 1738 the "/" is not part of the url-path. However we find it convenient to add here for brevity.
+        urlPath.add(new ResultPair("", true));
+        urlPath.add(new ResultPair("/rfc", true));
+        urlPath.add(new ResultPair("/rfc/rfc1738.txt", true));
+        urlPath.add(new ResultPair("/rfc/rfc-index.txt.new.diff", true));
+        urlPath.add(new ResultPair("/%0B", true));
+        urlPath.add(new ResultPair("/~", true));
+        urlPath.add(new ResultPair("/_", true));
+        urlPath.add(new ResultPair("/giga$byte", true));
+        urlPath.add(new ResultPair("/star+fish", true));
+        urlPath.add(new ResultPair("/%HI", false));
+        urlPath.add(new ResultPair("/^", false));
+        urlPath.add(new ResultPair("/<", false));
+        urlPath.add(new ResultPair("/1325><AB", false));
+        urlPath.add(new ResultPair("/{}", false));
+
+
+        urlQuery.add(new ResultPair("", true));
+        urlQuery.add(new ResultPair("?", true));
+        urlQuery.add(new ResultPair("?name=donny&color=blue", true));
+        urlQuery.add(new ResultPair("?name=donny;color=blue", true));
+        urlQuery.add(new ResultPair("?2=2", true));
+        urlQuery.add(new ResultPair("?", true));
+        urlQuery.add(new ResultPair("?%HI", false));
+        urlQuery.add(new ResultPair("?tom+read", true));
+        urlQuery.add(new ResultPair("?tom~read", false));
+        urlQuery.add(new ResultPair("?tom%7Eread", true));
+        urlQuery.add(new ResultPair("?tom!read", true));
+        urlQuery.add(new ResultPair("?tom$read", true));
+        urlQuery.add(new ResultPair("?tom(read", true));
+
+        /** https://tools.ietf.org/html/rfc3986#section-3.5
+         * "If no such representation exists, then the
+         semantics of the fragment are considered unknown and are effectively
+         unconstrained."
+         Since the fragment in unconstrained there is no obvious way to falsify.
+         */
+        urlFragment.add(new ResultPair("", true));
+        urlFragment.add(new ResultPair("#ga", true));
+        urlFragment.add(new ResultPair("#^&", true));
+        urlFragment.add(new ResultPair("#t=10,20", true));
+
+        scheme.forEach(protocol ->{
+            authority.forEach(domain->{
+                port.forEach(p->{
+                    urlPath.forEach(path->{
+                        urlQuery.forEach(query->{
+                            urlFragment.forEach(fragment->{
+
+                                String testURL = protocol.item + domain.item + p.item + path.item + query.item + fragment.item;
+                                boolean resultPairTest = protocol.valid && domain.valid && p.valid && path.valid && query.valid && fragment.valid;
+
+                                if(resultPairTest != urlValidator.isValid(testURL)){
+                                    System.out.println("TEST FAILED " + testURL + " Actual Result: " + urlValidator.isValid(testURL) );
+
+
+                                }
+                                else{
+                                    //System.out.println("TEST PASSED " + testURL);
+
+                                }
+
+                            });
+
+                        });
+
+                    });
+
+
+                });
+
+
+
+
+
+            });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        });
+
+
+
+    }
+
+
+    public void testAnyOtherUnitTest()
+    {
 
     
-   static boolean incrementTestPartsIndex(int[] testPartsIndex, Object[] testParts) {
-      boolean carry = true;  //add 1 to lowest order part.
-      boolean maxIndex = true;
-      for (int testPartsIndexIndex = testPartsIndex.length - 1; testPartsIndexIndex >= 0; --testPartsIndexIndex) {
-         int index = testPartsIndex[testPartsIndexIndex];
-         ResultPair[] part = (ResultPair[]) testParts[testPartsIndexIndex];
-         if (carry) {
-            if (index < part.length - 1) {
-               index++;
-               testPartsIndex[testPartsIndexIndex] = index;
-               carry = false;
-            } else {
-               testPartsIndex[testPartsIndexIndex] = 0;
-               carry = true;
-            }
-         }
-         maxIndex &= (index == (part.length - 1));
-      }
 
+    }
+    /**
+     * Create set of tests by taking the testUrlXXX arrays and
+     * running through all possible permutations of their combinations.
+     *
+     */
+    public static void main(String[] argv) {
 
-      return (!maxIndex);
-   }
-
-   private String testPartsIndextoString() {
-      StringBuffer carryMsg = new StringBuffer("{");
-      for (int testPartsIndexIndex = 0; testPartsIndexIndex < testPartsIndex.length; ++testPartsIndexIndex) {
-         carryMsg.append(testPartsIndex[testPartsIndexIndex]);
-         if (testPartsIndexIndex < testPartsIndex.length - 1) {
-            carryMsg.append(',');
-         } else {
-            carryMsg.append('}');
-         }
-      }
-      return carryMsg.toString();
-
-   }
-
-   public void testValidateUrl() {
-      assertTrue(true);
-   }
-   
-   public void testBug1(){
-	  //http://www.google.com:80/test1?action=view true
-	   UrlValidator validator = new UrlValidator();
-	   validator.isValid("http://www.google.com:80/test1?action=view true");
-	   
-   }
-   
-   public void testBug2(){
-	   UrlValidator validator = new UrlValidator();
-	   validator.isValid("http://0.0.0.0:80/test1?action=view true");
-   }
-
-   /**
-    * Only used to debug the unit tests.
-    * @param argv
-    */
-   public static void main(String[] argv) {
-
-      UrlValidatorTest fct = new UrlValidatorTest("url test");
-      fct.setUp();
-      fct.testIsValid();
-      fct.testIsValidScheme();
-   }
-   //-------------------- Test data for creating a composite URL
-   /**
-    * The data given below approximates the 4 parts of a URL
-    * <scheme>://<authority><path>?<query> except that the port number
-    * is broken out of authority to increase the number of permutations.
-    * A complete URL is composed of a scheme+authority+port+path+query,
-    * all of which must be individually valid for the entire URL to be considered
-    * valid.
-    */
-   ResultPair[] testUrlScheme = {new ResultPair("http://", true),
-                               new ResultPair("ftp://", true),
-                               new ResultPair("h3t://", true),
-                               new ResultPair("3ht://", false),
-                               new ResultPair("http:/", false),
-                               new ResultPair("http:", false),
-                               new ResultPair("http/", false),
-                               new ResultPair("://", false),
-                               new ResultPair("", true)};
-
-   ResultPair[] testUrlAuthority = {new ResultPair("www.google.com", true),
-                                  new ResultPair("go.com", true),
-                                  new ResultPair("go.au", true),
-                                  new ResultPair("0.0.0.0", true),
-                                  new ResultPair("255.255.255.255", true),
-                                  new ResultPair("256.256.256.256", false),
-                                  new ResultPair("255.com", true),
-                                  new ResultPair("1.2.3.4.5", false),
-                                  new ResultPair("1.2.3.4.", false),
-                                  new ResultPair("1.2.3", false),
-                                  new ResultPair(".1.2.3.4", false),
-                                  new ResultPair("go.a", false),
-                                  new ResultPair("go.a1a", false),
-                                  new ResultPair("go.cc", true),
-                                  new ResultPair("go.1aa", false),
-                                  new ResultPair("aaa.", false),
-                                  new ResultPair(".aaa", false),
-                                  new ResultPair("aaa", false),
-                                  new ResultPair("", false)
-   };
-   ResultPair[] testUrlPort = {new ResultPair(":80", true),
-                             new ResultPair(":65535", true),
-                             new ResultPair(":0", true),
-                             new ResultPair("", true),
-                             new ResultPair(":-1", false),
-                             new ResultPair(":65636", true),
-                             new ResultPair(":65a", false)
-   };
-   ResultPair[] testPath = {new ResultPair("/test1", true),
-                          new ResultPair("/t123", true),
-                          new ResultPair("/$23", true),
-                          new ResultPair("/..", false),
-                          new ResultPair("/../", false),
-                          new ResultPair("/test1/", true),
-                          new ResultPair("", true),
-                          new ResultPair("/test1/file", true),
-                          new ResultPair("/..//file", false),
-                          new ResultPair("/test1//file", false)
-   };
-   //Test allow2slash, noFragment
-   ResultPair[] testUrlPathOptions = {new ResultPair("/test1", true),
-                                    new ResultPair("/t123", true),
-                                    new ResultPair("/$23", true),
-                                    new ResultPair("/..", false),
-                                    new ResultPair("/../", false),
-                                    new ResultPair("/test1/", true),
-                                    new ResultPair("/#", false),
-                                    new ResultPair("", true),
-                                    new ResultPair("/test1/file", true),
-                                    new ResultPair("/t123/file", true),
-                                    new ResultPair("/$23/file", true),
-                                    new ResultPair("/../file", false),
-                                    new ResultPair("/..//file", false),
-                                    new ResultPair("/test1//file", true),
-                                    new ResultPair("/#/file", false)
-   };
-
-   ResultPair[] testUrlQuery = {new ResultPair("?action=view", true),
-                              new ResultPair("?action=edit&mode=up", true),
-                              new ResultPair("", true)
-   };
-
-   Object[] testUrlParts = {testUrlScheme, testUrlAuthority, testUrlPort, testPath, testUrlQuery};
-   Object[] testUrlPartsOptions = {testUrlScheme, testUrlAuthority, testUrlPort, testUrlPathOptions, testUrlQuery};
-   int[] testPartsIndex = {0, 0, 0, 0, 0};
-
-   //---------------- Test data for individual url parts ----------------
-   ResultPair[] testScheme = {new ResultPair("http", true),
-                            new ResultPair("ftp", false),
-                            new ResultPair("httpd", false),
-                            new ResultPair("telnet", false)};
-
+        UrlValidatorTest fct = new UrlValidatorTest("url test");
+        fct.testManualTest();
+    }
 
 }
